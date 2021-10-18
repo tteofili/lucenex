@@ -61,7 +61,7 @@ public class SamplesTest {
     public void testIndexingAndSearchQP() throws Exception {
         Path path = Paths.get("target/idx1");
 
-        QueryParser parser = new QueryParser("titolo", new WhitespaceAnalyzer());
+        QueryParser parser = new QueryParser("contenuto", new WhitespaceAnalyzer());
         Query query = parser.parse("+ingegneria dei +dati");
 
         try (Directory directory = FSDirectory.open(path)) {
