@@ -58,16 +58,14 @@ import java.util.Map;
 public class SamplesTest {
 
     @Test
-    public void testIndexingAndSearchQP() throws Exception {
-        Path path = Paths.get("target/idx1");
+    public void testIndexingAndSearchAll() throws Exception {
+        Path path = Paths.get("target/idx3");
 
-        QueryParser parser = new QueryParser("contenuto", new WhitespaceAnalyzer());
-        Query query = parser.parse("+ingegneria dei +dati");
+        Query query = new MatchAllDocsQuery();
 
         try (Directory directory = FSDirectory.open(path)) {
             Analyzer defaultAnalyzer = new StandardAnalyzer();
             Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-
             indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
 
             try (IndexReader reader = DirectoryReader.open(directory)) {
@@ -90,48 +88,6 @@ public class SamplesTest {
             Analyzer defaultAnalyzer = new StandardAnalyzer();
             Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
             indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
-
-            try (IndexReader reader = DirectoryReader.open(directory)) {
-                IndexSearcher searcher = new IndexSearcher(reader);
-                runQuery(searcher, query);
-            } finally {
-                directory.close();
-            }
-
-        }
-    }
-
-    @Test
-    public void testIndexingAndSearchAll() throws Exception {
-        Path path = Paths.get("target/idx3");
-
-        Query query = new MatchAllDocsQuery();
-
-        try (Directory directory = FSDirectory.open(path)) {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
-
-            try (IndexReader reader = DirectoryReader.open(directory)) {
-                IndexSearcher searcher = new IndexSearcher(reader);
-                runQuery(searcher, query);
-            } finally {
-                directory.close();
-            }
-
-        }
-    }
-
-    @Test
-    public void testIndexingAndSearchAllWithCodec() throws Exception {
-        Path path = Paths.get("target/idx6");
-
-        Query query = new MatchAllDocsQuery();
-
-        try (Directory directory = FSDirectory.open(path)) {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, new SimpleTextCodec());
 
             try (IndexReader reader = DirectoryReader.open(directory)) {
                 IndexSearcher searcher = new IndexSearcher(reader);
@@ -198,6 +154,79 @@ public class SamplesTest {
         }
     }
 
+    @Test
+    public void testIndexingAndSearchQP() throws Exception {
+        Path path = Paths.get("target/idx1");
+
+        QueryParser parser = new QueryParser("contenuto", new WhitespaceAnalyzer());
+        Query query = parser.parse("+ingegneria dei +dati");
+
+        try (Directory directory = FSDirectory.open(path)) {
+            Analyzer defaultAnalyzer = new StandardAnalyzer();
+            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
+
+            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
+
+            try (IndexReader reader = DirectoryReader.open(directory)) {
+                IndexSearcher searcher = new IndexSearcher(reader);
+                runQuery(searcher, query);
+            } finally {
+                directory.close();
+            }
+
+        }
+    }
+
+    @Test
+    public void testRankingWithDifferentSimilarities() throws Exception {
+        Path path = Paths.get(Files.createTempDirectory("target").toUri());
+        Directory directory = FSDirectory.open(path);
+
+        QueryParser parser = new MultiFieldQueryParser(new String[] {"contenuto", "titolo"}, new WhitespaceAnalyzer());
+        Query query = parser.parse("ingegneria dati data scientist");
+        try {
+            Analyzer defaultAnalyzer = new StandardAnalyzer();
+            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
+
+            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
+
+            Collection<Similarity> similarities = Arrays.asList(new ClassicSimilarity(), new BM25Similarity(2.5f, 0.2f),
+                    new LMJelinekMercerSimilarity(0.1f));
+            for (Similarity similarity : similarities) {
+                try (IndexReader reader = DirectoryReader.open(directory)) {
+                    IndexSearcher searcher = new IndexSearcher(reader);
+                    searcher.setSimilarity(similarity);
+                    System.err.println("Using "+ similarity);
+                    runQuery(searcher, query, true);
+                }
+            }
+
+        } finally {
+            directory.close();
+        }
+    }
+
+    @Test
+    public void testIndexingAndSearchAllWithCodec() throws Exception {
+        Path path = Paths.get("target/idx6");
+
+        Query query = new MatchAllDocsQuery();
+
+        try (Directory directory = FSDirectory.open(path)) {
+            Analyzer defaultAnalyzer = new StandardAnalyzer();
+            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
+            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, new SimpleTextCodec());
+
+            try (IndexReader reader = DirectoryReader.open(directory)) {
+                IndexSearcher searcher = new IndexSearcher(reader);
+                runQuery(searcher, query);
+            } finally {
+                directory.close();
+            }
+
+        }
+    }
+
     private void runQuery(IndexSearcher searcher, Query query) throws IOException {
         runQuery(searcher, query, false);
     }
@@ -253,32 +282,4 @@ public class SamplesTest {
         System.out.println(w);
     }
 
-    @Test
-    public void testRankingWithDifferentSimilarities() throws Exception {
-        Path path = Paths.get(Files.createTempDirectory("target").toUri());
-        Directory directory = FSDirectory.open(path);
-
-        QueryParser parser = new MultiFieldQueryParser(new String[] {"contenuto", "titolo"}, new WhitespaceAnalyzer());
-        Query query = parser.parse("ingegneria dati data scientist");
-        try {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
-
-            Collection<Similarity> similarities = Arrays.asList(new ClassicSimilarity(), new BM25Similarity(2.5f, 0.2f),
-                    new LMJelinekMercerSimilarity(0.1f));
-            for (Similarity similarity : similarities) {
-                try (IndexReader reader = DirectoryReader.open(directory)) {
-                    IndexSearcher searcher = new IndexSearcher(reader);
-                    searcher.setSimilarity(similarity);
-                    System.err.println("Using "+ similarity);
-                    runQuery(searcher, query, true);
-                }
-            }
-
-        } finally {
-            directory.close();
-        }
-    }
 }
