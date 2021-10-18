@@ -226,6 +226,7 @@ public class SamplesTest {
             config.setCodec(codec);
         }
         IndexWriter writer = new IndexWriter(directory, config);
+        writer.deleteAll();
 
         Document doc1 = new Document();
         doc1.add(new TextField("titolo", "Come diventare un ingegnere dei dati, Data Engineer?", Field.Store.YES));
