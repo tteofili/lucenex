@@ -64,10 +64,7 @@ public class SamplesTest {
         Query query = new MatchAllDocsQuery();
 
         try (Directory directory = FSDirectory.open(path)) {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
-
+            indexDocs(directory, null);
             try (IndexReader reader = DirectoryReader.open(directory)) {
                 IndexSearcher searcher = new IndexSearcher(reader);
                 runQuery(searcher, query);
@@ -85,10 +82,7 @@ public class SamplesTest {
         Query query = new TermQuery(new Term("titolo", "Ingegneria"));
 
         try (Directory directory = FSDirectory.open(path)) {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
-
+            indexDocs(directory, null);
             try (IndexReader reader = DirectoryReader.open(directory)) {
                 IndexSearcher searcher = new IndexSearcher(reader);
                 runQuery(searcher, query);
@@ -109,10 +103,7 @@ public class SamplesTest {
                 .build();
 
         try (Directory directory = FSDirectory.open(path)) {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
-
+            indexDocs(directory, null);
             try (IndexReader reader = DirectoryReader.open(directory)) {
                 IndexSearcher searcher = new IndexSearcher(reader);
                 runQuery(searcher, query);
@@ -140,10 +131,7 @@ public class SamplesTest {
                 .build();
 
         try (Directory directory = FSDirectory.open(path)) {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
-
+            indexDocs(directory, null);
             try (IndexReader reader = DirectoryReader.open(directory)) {
                 IndexSearcher searcher = new IndexSearcher(reader);
                 runQuery(searcher, query);
@@ -162,11 +150,7 @@ public class SamplesTest {
         Query query = parser.parse("+ingegneria dei +dati");
 
         try (Directory directory = FSDirectory.open(path)) {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
-
+            indexDocs(directory, null);
             try (IndexReader reader = DirectoryReader.open(directory)) {
                 IndexSearcher searcher = new IndexSearcher(reader);
                 runQuery(searcher, query);
@@ -185,11 +169,7 @@ public class SamplesTest {
         QueryParser parser = new MultiFieldQueryParser(new String[] {"contenuto", "titolo"}, new WhitespaceAnalyzer());
         Query query = parser.parse("ingegneria dati data scientist");
         try {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, null);
-
+            indexDocs(directory, null);
             Collection<Similarity> similarities = Arrays.asList(new ClassicSimilarity(), new BM25Similarity(2.5f, 0.2f),
                     new LMJelinekMercerSimilarity(0.1f));
             for (Similarity similarity : similarities) {
@@ -213,10 +193,7 @@ public class SamplesTest {
         Query query = new MatchAllDocsQuery();
 
         try (Directory directory = FSDirectory.open(path)) {
-            Analyzer defaultAnalyzer = new StandardAnalyzer();
-            Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-            indexDocs(directory, defaultAnalyzer, perFieldAnalyzers, new SimpleTextCodec());
-
+            indexDocs(directory, new SimpleTextCodec());
             try (IndexReader reader = DirectoryReader.open(directory)) {
                 IndexSearcher searcher = new IndexSearcher(reader);
                 runQuery(searcher, query);
@@ -244,8 +221,10 @@ public class SamplesTest {
         }
     }
 
-    private void indexDocs(Directory directory, Analyzer defaultAnalyzer, Map<String, Analyzer> perFieldAnalyzers, Codec codec) throws IOException {
+    private void indexDocs(Directory directory, Codec codec) throws IOException {
+        Analyzer defaultAnalyzer = new StandardAnalyzer();
         CharArraySet stopWords = new CharArraySet(Arrays.asList("in", "dei", "di"), true);
+        Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
         perFieldAnalyzers.put("contenuto", new StandardAnalyzer(stopWords));
         perFieldAnalyzers.put("titolo", new WhitespaceAnalyzer());
 
