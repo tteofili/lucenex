@@ -17,6 +17,7 @@ import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexOptions;
@@ -80,6 +81,24 @@ public class SamplesTest {
         Path path = Paths.get("target/idx2");
 
         Query query = new TermQuery(new Term("titolo", "Ingegneria"));
+
+        try (Directory directory = FSDirectory.open(path)) {
+            indexDocs(directory, null);
+            try (IndexReader reader = DirectoryReader.open(directory)) {
+                IndexSearcher searcher = new IndexSearcher(reader);
+                runQuery(searcher, query);
+            } finally {
+                directory.close();
+            }
+
+        }
+    }
+
+    @Test
+    public void testIndexingAndSearchTQOnStringField() throws Exception {
+        Path path = Paths.get("target/idx7");
+
+        Query query = new TermQuery(new Term("data", "12 ottobre 2016"));
 
         try (Directory directory = FSDirectory.open(path)) {
             indexDocs(directory, null);
@@ -239,6 +258,7 @@ public class SamplesTest {
         Document doc1 = new Document();
         doc1.add(new TextField("titolo", "Come diventare un ingegnere dei dati, Data Engineer?", Field.Store.YES));
         doc1.add(new TextField("contenuto", "Sembra che oggigiorno tutti vogliano diventare un Data Scientist  ...", Field.Store.YES));
+        doc1.add(new StringField("data", "12 ottobre 2016", Field.Store.YES));
 
         Document doc2 = new Document();
         doc2.add(new TextField("titolo", "Curriculum Ingegneria dei Dati - Sezione di Informatica e Automazione", Field.Store.YES));
