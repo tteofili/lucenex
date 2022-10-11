@@ -1,47 +1,5 @@
 package lucenex;
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
-import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
-import org.apache.lucene.analysis.custom.CustomAnalyzer;
-import org.apache.lucene.analysis.en.EnglishAnalyzer;
-import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
-import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
-import org.apache.lucene.analysis.standard.ClassicAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.similarities.AxiomaticF2EXP;
-import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
-import org.apache.lucene.search.similarities.DFISimilarity;
-import org.apache.lucene.search.similarities.DFRSimilarity;
-import org.apache.lucene.search.similarities.IndependenceChiSquared;
-import org.apache.lucene.search.similarities.LMDirichletSimilarity;
-import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
-import org.apache.lucene.search.similarities.MultiSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -53,10 +11,69 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.tests.analysis.TokenStreamToDot;
+import org.junit.Test;
+
 /**
  * Trivial tests for indexing and search in Lucene
  */
 public class SamplesTest {
+
+    @Test
+    public void testIndexStatistics() throws Exception {
+        Path path = Paths.get("target/idx0");
+
+        try (Directory directory = FSDirectory.open(path)) {
+            indexDocs(directory, new SimpleTextCodec());
+            try (IndexReader reader = DirectoryReader.open(directory)) {
+                IndexSearcher searcher = new IndexSearcher(reader);
+                Collection<String> indexedFields = FieldInfos.getIndexedFields(reader);
+                for (String field : indexedFields) {
+                    System.out.println(searcher.collectionStatistics(field));
+                }
+            } finally {
+                directory.close();
+            }
+
+        }
+    }
+
 
     @Test
     public void testIndexingAndSearchAll() throws Exception {
