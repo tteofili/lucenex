@@ -151,6 +151,42 @@ public class SamplesTest {
     }
 
     @Test
+    public void testIndexingAndSearchPQ2() throws Exception {
+        Path path = Paths.get("target/idx4");
+
+        PhraseQuery query = new PhraseQuery(1, "contenuto", "data", "scientist");
+
+        try (Directory directory = FSDirectory.open(path)) {
+            indexDocs(directory, null);
+            try (IndexReader reader = DirectoryReader.open(directory)) {
+                IndexSearcher searcher = new IndexSearcher(reader);
+                runQuery(searcher, query);
+            } finally {
+                directory.close();
+            }
+
+        }
+    }
+
+    @Test
+    public void testIndexingAndSearchPQWithSlop() throws Exception {
+        Path path = Paths.get("target/idx4");
+
+        PhraseQuery query = new PhraseQuery(2, "contenuto", "laurea", "ingegneria");
+
+        try (Directory directory = FSDirectory.open(path)) {
+            indexDocs(directory, null);
+            try (IndexReader reader = DirectoryReader.open(directory)) {
+                IndexSearcher searcher = new IndexSearcher(reader);
+                runQuery(searcher, query);
+            } finally {
+                directory.close();
+            }
+
+        }
+    }
+
+    @Test
     public void testIndexingAndSearchBQ() throws Exception {
         Path path = Paths.get("target/idx5");
 
