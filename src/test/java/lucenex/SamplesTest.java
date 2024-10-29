@@ -19,23 +19,11 @@ import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
@@ -271,6 +259,24 @@ public class SamplesTest {
         }
     }
 
+    @Test
+    public void testKnn() throws Exception {
+        Path path = Paths.get("target/idx6");
+
+        Query query = new KnnFloatVectorQuery("embedding", new float[]{0.1f, 0.1f, 0.3f},2);
+
+        try (Directory directory = FSDirectory.open(path)) {
+            indexDocs(directory, new SimpleTextCodec());
+            try (IndexReader reader = DirectoryReader.open(directory)) {
+                IndexSearcher searcher = new IndexSearcher(reader);
+                runQuery(searcher, query);
+            } finally {
+                directory.close();
+            }
+
+        }
+    }
+
     private void runQuery(IndexSearcher searcher, Query query) throws IOException {
         runQuery(searcher, query, false);
     }
@@ -308,10 +314,12 @@ public class SamplesTest {
         doc1.add(new TextField("titolo", "Come diventare un ingegnere dei dati, Data Engineer?", Field.Store.YES));
         doc1.add(new TextField("contenuto", "Sembra che oggigiorno tutti vogliano diventare un Data Scientist  ...", Field.Store.YES));
         doc1.add(new StringField("data", "12 ottobre 2016", Field.Store.YES));
+        doc1.add(new KnnFloatVectorField("embedding", new float[]{0.4f, 0.5f, 0.6f}));
 
         Document doc2 = new Document();
         doc2.add(new TextField("titolo", "Curriculum Ingegneria dei Dati - Sezione di Informatica e Automazione", Field.Store.YES));
         doc2.add(new TextField("contenuto", "Curriculum. Ingegneria dei Dati. Laurea Magistrale in Ingegneria Informatica ...", Field.Store.YES));
+        doc2.add(new KnnFloatVectorField("embedding", new float[]{0.1f, 0.2f, 0.3f}));
 
         writer.addDocument(doc1);
         writer.addDocument(doc2);
