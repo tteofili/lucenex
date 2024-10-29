@@ -23,12 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
@@ -282,9 +277,10 @@ public class SamplesTest {
 
     private void runQuery(IndexSearcher searcher, Query query, boolean explain) throws IOException {
         TopDocs hits = searcher.search(query, 10);
+        StoredFields storedFields = searcher.storedFields();
         for (int i = 0; i < hits.scoreDocs.length; i++) {
             ScoreDoc scoreDoc = hits.scoreDocs[i];
-            Document doc = searcher.doc(scoreDoc.doc);
+            Document doc = storedFields.document(scoreDoc.doc);
             System.out.println("doc"+scoreDoc.doc + ":"+ doc.get("titolo") + " (" + scoreDoc.score +")");
             if (explain) {
                 Explanation explanation = searcher.explain(query, scoreDoc.doc);
