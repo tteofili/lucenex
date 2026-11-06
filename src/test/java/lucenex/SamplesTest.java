@@ -84,7 +84,7 @@ public class SamplesTest {
     public void testIndexingAndSearchTQ() throws Exception {
         Path path = Paths.get("target/idx2");
 
-        Query query = new TermQuery(new Term("titolo", "Ingegneria"));
+        Query query = new TermQuery(new Term("title", "retrieval"));
 
         try (Directory directory = FSDirectory.open(path)) {
             indexDocs(directory, null);
@@ -102,7 +102,7 @@ public class SamplesTest {
     public void testIndexingAndSearchTQOnStringField() throws Exception {
         Path path = Paths.get("target/idx7");
 
-        Query query = new TermQuery(new Term("data", "12 ottobre 2016"));
+        Query query = new TermQuery(new Term("date", "Oct 12th 2016"));
 
         try (Directory directory = FSDirectory.open(path)) {
             indexDocs(directory, null);
@@ -121,8 +121,8 @@ public class SamplesTest {
         Path path = Paths.get("target/idx4");
 
         PhraseQuery query = new PhraseQuery.Builder()
-                .add(new Term("contenuto", "data"))
-                .add(new Term("contenuto", "scientist"))
+                .add(new Term("abstract", "neural"))
+                .add(new Term("abstract", "information"))
                 .build();
 
         try (Directory directory = FSDirectory.open(path)) {
@@ -141,7 +141,7 @@ public class SamplesTest {
     public void testIndexingAndSearchPQ2() throws Exception {
         Path path = Paths.get("target/idx4");
 
-        PhraseQuery query = new PhraseQuery(1, "contenuto", "data", "scientist");
+        PhraseQuery query = new PhraseQuery(1, "abstract", "neural", "information");
 
         try (Directory directory = FSDirectory.open(path)) {
             indexDocs(directory, null);
@@ -159,7 +159,7 @@ public class SamplesTest {
     public void testIndexingAndSearchPQWithSlop() throws Exception {
         Path path = Paths.get("target/idx4");
 
-        PhraseQuery query = new PhraseQuery(2, "contenuto", "laurea", "ingegneria");
+        PhraseQuery query = new PhraseQuery(2, "abstract", "neural", "information");
 
         try (Directory directory = FSDirectory.open(path)) {
             indexDocs(directory, null);
@@ -178,11 +178,12 @@ public class SamplesTest {
         Path path = Paths.get("target/idx5");
 
         PhraseQuery phraseQuery = new PhraseQuery.Builder()
-                .add(new Term("contenuto", "data"))
-                .add(new Term("contenuto", "scientist"))
+                .add(new Term("abstract", "neural"))
+                .add(new Term("abstract", "information"))
+                .add(new Term("abstract", "retrieval"))
                 .build();
 
-        TermQuery termQuery = new TermQuery(new Term("titolo", "Ingegneria"));
+        TermQuery termQuery = new TermQuery(new Term("title", "graph"));
 
         BooleanQuery query = new BooleanQuery.Builder()
                 .add(new BooleanClause(termQuery, BooleanClause.Occur.SHOULD))
@@ -205,8 +206,8 @@ public class SamplesTest {
     public void testIndexingAndSearchQP() throws Exception {
         Path path = Paths.get("target/idx1");
 
-        QueryParser parser = new QueryParser("contenuto", new WhitespaceAnalyzer());
-        Query query = parser.parse("+ingegneria dei +dati");
+        QueryParser parser = new QueryParser("abstract", new WhitespaceAnalyzer());
+        Query query = parser.parse("neural +information +retrieval");
 
         try (Directory directory = FSDirectory.open(path)) {
             indexDocs(directory, null);
@@ -225,8 +226,8 @@ public class SamplesTest {
         Path path = Paths.get(Files.createTempDirectory("target").toUri());
         Directory directory = FSDirectory.open(path);
 
-        QueryParser parser = new MultiFieldQueryParser(new String[] {"contenuto", "titolo"}, new WhitespaceAnalyzer());
-        Query query = parser.parse("ingegneria dati data scientist");
+        QueryParser parser = new MultiFieldQueryParser(new String[] {"abstract", "title"}, new WhitespaceAnalyzer());
+        Query query = parser.parse("information retrieval");
         try {
             indexDocs(directory, null);
             Collection<Similarity> similarities = Arrays.asList(new ClassicSimilarity(), new BM25Similarity(2.5f, 0.2f),
@@ -291,7 +292,7 @@ public class SamplesTest {
         for (int i = 0; i < hits.scoreDocs.length; i++) {
             ScoreDoc scoreDoc = hits.scoreDocs[i];
             Document doc = storedFields.document(scoreDoc.doc);
-            System.out.println("doc"+scoreDoc.doc + ":"+ doc.get("titolo") + " (" + scoreDoc.score +")");
+            System.out.println("doc"+scoreDoc.doc + ":"+ doc.get("title") + " (" + scoreDoc.score +")");
             if (explain) {
                 Explanation explanation = searcher.explain(query, scoreDoc.doc);
                 System.out.println(explanation);
@@ -303,8 +304,8 @@ public class SamplesTest {
         Analyzer defaultAnalyzer = new StandardAnalyzer();
         CharArraySet stopWords = new CharArraySet(Arrays.asList("in", "dei", "di"), true);
         Map<String, Analyzer> perFieldAnalyzers = new HashMap<>();
-        perFieldAnalyzers.put("contenuto", new StandardAnalyzer(stopWords));
-        perFieldAnalyzers.put("titolo", new WhitespaceAnalyzer());
+        perFieldAnalyzers.put("abstract", new StandardAnalyzer(stopWords));
+        perFieldAnalyzers.put("title", new WhitespaceAnalyzer());
 
         Analyzer analyzer = new PerFieldAnalyzerWrapper(defaultAnalyzer, perFieldAnalyzers);
         IndexWriterConfig config = new IndexWriterConfig(analyzer);
@@ -315,14 +316,14 @@ public class SamplesTest {
         writer.deleteAll();
 
         Document doc1 = new Document();
-        doc1.add(new TextField("titolo", "Come diventare un ingegnere dei dati, Data Engineer?", Field.Store.YES));
-        doc1.add(new TextField("contenuto", "Sembra che oggigiorno tutti vogliano diventare un Data Scientist  ...", Field.Store.YES));
-        doc1.add(new StringField("data", "12 ottobre 2016", Field.Store.YES));
+        doc1.add(new TextField("title", "A Survey on Neural Information Retrieval", Field.Store.YES));
+        doc1.add(new TextField("abstract", "We conduct a survey on neural information retrieval methods.", Field.Store.YES));
+        doc1.add(new StringField("date", "Oct 2016", Field.Store.YES));
         doc1.add(new KnnFloatVectorField("embedding", new float[]{0.4f, 0.5f, 0.6f}));
 
         Document doc2 = new Document();
-        doc2.add(new TextField("titolo", "Curriculum Ingegneria dei Dati - Sezione di Informatica e Automazione", Field.Store.YES));
-        doc2.add(new TextField("contenuto", "Curriculum. Ingegneria dei Dati. Laurea Magistrale in Ingegneria Informatica ...", Field.Store.YES));
+        doc2.add(new TextField("title", "Graph based Information Retrieval", Field.Store.YES));
+        doc2.add(new TextField("abstract", "We investigate graph-based information retrieval methods.", Field.Store.YES));
         doc2.add(new KnnFloatVectorField("embedding", new float[]{0.1f, 0.2f, 0.3f}));
 
         writer.addDocument(doc1);
@@ -347,7 +348,7 @@ public class SamplesTest {
         Path path = Paths.get("target/idx_vector");
 
         EmbeddingModel embeddingModel = new AllMiniLmL6V2EmbeddingModel();
-        Query query = new KnnFloatVectorQuery("embedding", embeddingModel.embed(TextSegment.from("I enjoy good football")).content().vector(), 2);
+        Query query = new KnnFloatVectorQuery("embedding", embeddingModel.embed(TextSegment.from("neural retrieval")).content().vector(), 2);
 
         try (Directory directory = FSDirectory.open(path)) {
 
